@@ -7,13 +7,17 @@ module.exports = {
     return res.render("job");
   },
 
-  save(req, res) {
-    // const jobs = Job.get()
-    //const lastId = jobs[jobs.length - 1]?.id || 0;
-    const lastId = Job.get()[Job.get().length - 1]?.id || 0;
+  // REFATORADO
+  // save altera os dados do Job. Por isso, foi tirado do controller e transferido para o model
 
-    Job.get().push({
-      id: lastId + 1,
+  async save(req, res) {
+    //// const jobs = await Job.get()
+    //// const lastId = jobs[jobs.length - 1]?.id || 0;
+    // // const lastId = await Job.get()[Job.get().length - 1]?.id || 0;
+
+    await Job.create({
+      // id: lastId + 1,
+      // o banco já incrementa o id
       name: req.body.name,
       "daily-hours": req.body["daily-hours"],
       "total-hours": req.body["total-hours"],
@@ -23,35 +27,37 @@ module.exports = {
     return res.redirect("/");
   },
 
-  show(req, res) {
+  async show(req, res) {
     const jobId = req.params.id;
 
-    // const jobs = Job.get()
-    // const job = jobs.find((job) => Number(job.id) === Number(jobId));
-    const job = Job.get().find((job) => Number(job.id) === Number(jobId));
+    const jobs = await Job.get()
+    const job = jobs.find((job) => Number(job.id) === Number(jobId));
+    // const job = await Job.get().find((job) => Number(job.id) === Number(jobId));
 
     if (!job) {
       return res.send("Job not found!");
     }
 
-    // const profile = Profile.get()
-    // job.budget = JobUtils.calculateBudget(job, profile["value-hour"]);
-    job.budget = JobUtils.calculateBudget(job, Profile.get()["value-hour"]);
+    const profile = await Profile.get()
+    job.budget = JobUtils.calculateBudget(job, profile["value-hour"]);
+    // job.budget = JobUtils.calculateBudget(job, await Profile.get()["value-hour"]);
 
     return res.render("job-edit", { job });
   },
 
-  update(req, res) {
+  async update(req, res) {
+    
     const jobId = req.params.id;
 
-    const job = Job.get().find((job) => Number(job.id) === Number(jobId));
+    // const jobs = await Job.get();
 
-    if (!job) {
-      return res.send("Job not found!");
-    }
+    // const job = jobs.find((job) => Number(job.id) === Number(jobId));
+
+    // if (!job) {
+    //   return res.send("Job not found!");
+    // }
 
     const updatedJob = {
-      ...job,
       name: req.body.name,
       "total-hours": req.body["total-hours"],
       "daily-hours": req.body["daily-hours"],
@@ -59,23 +65,23 @@ module.exports = {
 
     // Job.update() = Job.get().map((job) => {...
     // ! não funciona
-    const newJobs = Job.get().map((job) => {
-      if (Number(job.id) === Number(jobId)) {
-        job = updatedJob;
-      }
+    // const newJobs = jobs.map((job) => {
+    //   if (Number(job.id) === Number(jobId)) {
+    //     job = updatedJob;
+    //   }
 
-      return job;
-    });
+    //   return job;
+    // });
 
-    Job.update(newJobs);
+    await Job.update(updatedJob, jobId);
 
     res.redirect("/job/" + jobId);
   },
 
-  delete(req, res) {
+  async delete(req, res) {
     // mudada a funcionalidade, pois o próprio model deve apagar o dado
     const jobId = req.params.id;
-    Job.delete(jobId);
+    await Job.delete(jobId);
 
     return res.redirect("/");
   },
